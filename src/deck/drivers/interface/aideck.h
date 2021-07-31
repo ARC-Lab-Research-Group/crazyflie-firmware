@@ -14,7 +14,11 @@
 #ifdef CBF_TYPE_POS
 #define MAX_CBFPACKET_DATA_SIZE 20
 #elif CBF_TYPE_EUL
+#ifdef CBF_ITERS
+#define MAX_CBFPACKET_DATA_SIZE 20
+#else
 #define MAX_CBFPACKET_DATA_SIZE 16
+#endif // CBF_ITERS
 #else
 #define MAX_CBFPACKET_DATA_SIZE 0
 #endif
@@ -36,100 +40,83 @@ typedef union{
 
 #ifdef CBF_TYPE_POS
 /** Control Input to adjust in the CBF-QP 16Bytes */
-typedef union u_s{
-  struct{
-    float T;       // Normalized thrust [m/s^2]
-    float phi;     // Roll [rad]
-    float theta;   // Pitch [rad]
-    float psi;     // Yaw [rad]
-  };
-  float arr[4];
+typedef struct u_s{
+  float T;       // Normalized thrust [m/s^2]
+  float phi;     // Roll [rad]
+  float theta;   // Pitch [rad]
+  float psi;     // Yaw [rad]
 } __attribute__((packed)) u_t;
 
 /** Compressed version of u_s 8Bytes*/
-typedef union u_comp_s{
-  struct{
-    int16_t T;     // Normalized thrust [mm/s^2]
-    int16_t phi;   // Roll [milirad]
-    int16_t theta; // Pitch [milirad]
-    int16_t psi;   // Yaw [milirad]
-  };
-  int16_t arr[4];
+typedef struct u_comp_s{
+  int16_t T;     // Normalized thrust [mm/s^2]
+  int16_t phi;   // Roll [milirad]
+  int16_t theta; // Pitch [milirad]
+  int16_t psi;   // Yaw [milirad]
 } __attribute__((packed)) u_comp_t;
 
 /** OSQP Parametric data to be updated in the OSQPData struct 40Bytes */
-typedef union cbf_qpdata_s{
-  struct{
-    float x;      // Position [m]
-    float y;
-    float z;
-    float x_dot;  // Velocity [m/s]
-    float y_dot;
-    float z_dot;
-    u_t u;        // Nominal input to adjust
-  };
-  float arr[10];
+typedef struct cbf_qpdata_s{
+  float x;      // Position [m]
+  float y;
+  float z;
+  float x_dot;  // Velocity [m/s]
+  float y_dot;
+  float z_dot;
+  u_t u;        // Nominal input to adjust
 } cbf_qpdata_t;
 
 /** Compressed version of cbf_qpdata_s 20Bytes */
-typedef union cbf_qpdata_comp_s{
-  struct{
-    int16_t x;     // Position [mm]
-    int16_t y;
-    int16_t z;
-    int16_t x_dot; // Velocity [mm/s]
-    int16_t y_dot;
-    int16_t z_dot;
-    u_comp_t u;    // Compressed Nominal input to adjust
-  };
-  int16_t arr[10];
+typedef struct cbf_qpdata_comp_s{
+  int16_t x;     // Position [mm]
+  int16_t y;
+  int16_t z;
+  int16_t x_dot; // Velocity [mm/s]
+  int16_t y_dot;
+  int16_t z_dot;
+  u_comp_t u;    // Compressed Nominal input to adjust
 } __attribute__((packed)) cbf_qpdata_comp_t;
 
 #elif CBF_TYPE_EUL
 /** Control Input to adjust in the CBF-QP 16Bytes */
-typedef union u_s{
-  struct{
-    float T;  // Normalized thrust [m/s^2]
-    float p;  // Angular velocities [rad/s]
-    float q;
-    float r;
-  };
-  float arr[4];
+typedef struct u_s{
+  float T;  // Normalized thrust [m/s^2]
+  float p;  // Angular velocities [rad/s]
+  float q;
+  float r;
 } __attribute__((packed)) u_t;
 
 /** Compressed version of u_s 8Bytes*/
-typedef union u_comp_s{
-  struct{
-    int16_t T;  // Normalized thrust [mm/s^2]
-    int16_t p;  // Angular velocities [milirad/s]
-    int16_t q;
-    int16_t r;
-  };
-  int16_t arr[4];
+typedef struct u_comp_s{
+  int16_t T;  // Normalized thrust [mm/s^2]
+  int16_t p;  // Angular velocities [milirad/s]
+  int16_t q;
+  int16_t r;
 } __attribute__((packed)) u_comp_t;
 
 
 /** OSQP Parametric data to be updated in the OSQPData struct 24Bytes */
-typedef union cbf_qpdata_s{
-  struct{
-    float phi;   // Roll  [rad]
-    float theta; // Pitch [rad]
-    u_t u;       // Nominal input to adjust
-  };
-  float arr[6];
+typedef struct cbf_qpdata_s{
+  float phi;   // Roll  [rad]
+  float theta; // Pitch [rad]
+  u_t u;       // Nominal input to adjust
 } cbf_qpdata_t;
 
 /** Compressed version of cbf_qpdata_eul_s 12Bytes */
-typedef union cbf_qpdata_comp_s{
-  struct{
-    int16_t phi;   // Roll  [milirad]
-    int16_t theta; // Pitch [milirad]
-    u_comp_t u;     // Compressed Nominal input to adjust
-  };
-  int16_t arr[6];
+typedef struct cbf_qpdata_comp_s{
+  int16_t phi;   // Roll  [milirad]
+  int16_t theta; // Pitch [milirad]
+  u_comp_t u;     // Compressed Nominal input to adjust
 } __attribute__((packed)) cbf_qpdata_comp_t;
 #endif // CBF_TYPE
 
+#ifdef CBF_ITERS
+/** Extended structure to send iters sizeof(u_t)+2Bytes */
+typedef struct u_it_s{
+  u_t u;
+  uint16_t iters; // Number of iterations to solve CBF-QP [-]
+} __attribute__((packed)) u_it_t;
+#endif
 
 /**
  * Pack size bytes of data into a CBFPacket
