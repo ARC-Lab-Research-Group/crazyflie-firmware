@@ -42,21 +42,23 @@
 #include "log.h"
 #include "param.h"
 #include "system.h"
-//#include "uart2.h"
 
 #include "aideck.h"
 #include "stabilizer_types.h"
 #include "aideck_uart_dma.h"
 
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
-volatile uint8_t dma_flag = 0;
-static u_t u;
+#ifdef CBF_ITERS
+u_it_t *u_it;
+#endif // CBF_ITERS
+u_t *u;
 static CBFPacket pk_rx; // Packet for receiving via UART
 static CBFPacket pk_tx; // Packet to send via UART
 static uint8_t aideck_ready_flag; // Set to 1 whenever a CBFPacket is received via UART
 static uint8_t missed_cycles; // Keeps track of the number of cbf_qpdata that have been discarded
 static cbf_qpdata_comp_t data_comp; // Compressed CBF-QP Data
-#endif
+volatile uint8_t dma_flag = 0;
+#endif //CBF_TYPE
 static bool isInit = false;
 
 //Uncomment when NINA printout read is desired from console
@@ -107,7 +109,6 @@ static void hex_to_char(uint8_t hex){
   hx_code[0] = offset_hex(hex/16);
   hx_code[1] = offset_hex(hex%16);
 }
-
 #endif
 
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
@@ -200,6 +201,13 @@ static void aideckInit(DeckInfo *info){
               AI_DECK_TASK_PRI, NULL);
 
 #if defined CBF_TYPE_EUL || defined CBF_TYPE_POS
+  // Allocate the input vector
+#ifdef CBF_ITERS
+  u_it = malloc(sizeof(u_it_t));
+  u = &(u_it->u);
+#else
+  u = malloc(sizeof(u_t));
+#endif
   // Start DMA Rx and configure USART Tx Rx
   USART_DMA_Start(115200, pk_rx.raw, sizeof(CBFPacket));
   // The AI Deck is ready for UART Data
