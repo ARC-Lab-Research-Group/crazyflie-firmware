@@ -49,7 +49,9 @@
 
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
 #ifdef CBF_ITERS
-u_it_t *u_it;
+static u_it_t u_struct;
+#else
+static u_t u_struct;
 #endif // CBF_ITERS
 u_t *u;
 static CBFPacket pk_rx; // Packet for receiving via UART
@@ -114,15 +116,15 @@ static void hex_to_char(uint8_t hex){
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
 // Update u with a stop command in case of error
 static void force_stop_u(void){
-  u.T = 0;
+  u->T = 0;
 #ifdef CBF_TYPE_EUL
-  u.p = 0;
-  u.q = 0;
-  u.r = 0;
+  u->p = 0;
+  u->q = 0;
+  u->r = 0;
 #elif CBF_TYPE_POS
-  u.phi = 0;
-  u.theta = 0;
-  u.psi = 0;
+  u->phi = 0;
+  u->theta = 0;
+  u->psi = 0;
 #endif
 }
 #endif
@@ -130,15 +132,18 @@ static void force_stop_u(void){
 #ifdef AI_CBF_DEBUG
 // DEBUG PRINT the u_t struct
 static void print_u(void){
-  DEBUG_PRINT("u.T = %.4f\n",(double)u.T);
+  DEBUG_PRINT("u.T = %.4f\n",(double)u->T);
 #ifdef CBF_TYPE_EUL
-  DEBUG_PRINT("u.p = %.4f\n",(double)u.p);
-  DEBUG_PRINT("u.q = %.4f\n",(double)u.q);
-  DEBUG_PRINT("u.r = %.4f\n",(double)u.r);
+  DEBUG_PRINT("u.p = %.4f\n",(double)u->p);
+  DEBUG_PRINT("u.q = %.4f\n",(double)u->q);
+  DEBUG_PRINT("u.r = %.4f\n",(double)u->r);
 #elif CBF_TYPE_POS
-  DEBUG_PRINT("u.phi = %.4f\n",(double)u.phi);
-  DEBUG_PRINT("u.theta = %.4f\n",(double)u.theta);
-  DEBUG_PRINT("u.psi = %.4f\n",(double)u.psi);
+  DEBUG_PRINT("u.phi = %.4f\n",(double)u->phi);
+  DEBUG_PRINT("u.theta = %.4f\n",(double)u->theta);
+  DEBUG_PRINT("u.psi = %.4f\n",(double)u->psi);
+#endif
+#ifdef CBF_ITERS
+  DEBUG_PRINT("iters = %d\n",u_struct.iters);
 #endif
   DEBUG_PRINT("Missed Cycles = %d\n\n", missed_cycles);
 }
@@ -152,7 +157,7 @@ static uint8_t unpack(void){
     return 1;
   }
   aideck_ready_flag = 1; // AI Deck is ready for more data
-  memcpy(&u, pk_rx.data, sizeof(u_t)); // Extract data from packet
+  memcpy(&u_struct, pk_rx.data, sizeof(u_struct)); // Extract data from packet
   memset(pk_rx.raw, 0, sizeof(CBFPacket)); // Clear packet for new data
   return 0;
 }
@@ -201,12 +206,10 @@ static void aideckInit(DeckInfo *info){
               AI_DECK_TASK_PRI, NULL);
 
 #if defined CBF_TYPE_EUL || defined CBF_TYPE_POS
-  // Allocate the input vector
 #ifdef CBF_ITERS
-  u_it = malloc(sizeof(u_it_t));
-  u = &(u_it->u);
+  u = &(u_struct.u);
 #else
-  u = malloc(sizeof(u_t));
+  u = &(u_struct);
 #endif
   // Start DMA Rx and configure USART Tx Rx
   USART_DMA_Start(115200, pk_rx.raw, sizeof(CBFPacket));
@@ -310,15 +313,15 @@ CBFPacket *cbf_pack(const uint8_t size, uint8_t *data){
 // Give controller the CBF-QP Solution
 void aideck_get_safe_u(float *u_control){
 #ifdef CBF_TYPE_EUL
-  u_control[0] = u.T;
-  u_control[1] = u.p;
-  u_control[2] = u.q;
-  u_control[3] = u.r;
+  u_control[0] = u->T;
+  u_control[1] = u->p;
+  u_control[2] = u->q;
+  u_control[3] = u->r;
 #elif CBF_TYPE_POS
-  u_control[0] = u.T;
-  u_control[1] = u.phi;
-  u_control[2] = u.theta;
-  u_control[3] = u.psi;
+  u_control[0] = u->T;
+  u_control[1] = u->phi;
+  u_control[2] = u->theta;
+  u_control[3] = u->psi;
 #endif
 }
 
@@ -349,6 +352,9 @@ static const DeckDriver aideck_deck = {
 LOG_GROUP_START(aideck)
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
 LOG_ADD(LOG_UINT8, missed_cycles, &missed_cycles)
+#ifdef CBF_ITERS
+LOG_ADD(LOG_UINT16, iters, &(u_struct.iters))
+#endif
 #endif
 LOG_GROUP_STOP(aideck)
 
