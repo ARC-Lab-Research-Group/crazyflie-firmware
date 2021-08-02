@@ -8,6 +8,7 @@
 #CFLAGS += -DCBF_TYPE_POS
 #CFLAGS += -DCBF_TYPE_EUL
 #CFLAGS += -DAI_CBF_DEBUG
+#CFLAGS += -DCBF_ITERS
 
 # Set to 1 to add OSQP to firmware compilation
 #COMPILE_OSQP := 1
