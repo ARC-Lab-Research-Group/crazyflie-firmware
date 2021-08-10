@@ -46,6 +46,7 @@
 #include "aideck.h"
 #include "stabilizer_types.h"
 #include "aideck_uart_dma.h"
+#include "statsCnt.h"
 
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
 #ifdef CBF_ITERS
@@ -60,6 +61,7 @@ static uint8_t aideck_ready_flag; // Set to 1 whenever a CBFPacket is received v
 static uint8_t missed_cycles; // Keeps track of the number of cbf_qpdata that have been discarded
 static cbf_qpdata_comp_t data_comp; // Compressed CBF-QP Data
 volatile uint8_t dma_flag = 0;
+static statsCntRateLogger_t counterCBF; // Rate logger
 #endif //CBF_TYPE
 static bool isInit = false;
 
@@ -156,6 +158,7 @@ static uint8_t unpack(void){
     memset(pk_rx.raw, 0, sizeof(CBFPacket)); // Clear packet for new data
     return 1;
   }
+  STATS_CNT_RATE_EVENT(&counterCBF); // Packet received, update rate
   aideck_ready_flag = 1; // AI Deck is ready for more data
   memcpy(&u_struct, pk_rx.data, sizeof(u_struct)); // Extract data from packet
   memset(pk_rx.raw, 0, sizeof(CBFPacket)); // Clear packet for new data
@@ -213,6 +216,8 @@ static void aideckInit(DeckInfo *info){
 #endif
   // Start DMA Rx and configure USART Tx Rx
   USART_DMA_Start(115200, pk_rx.raw, sizeof(CBFPacket));
+  // Start a rate logger for 100 Hz
+  STATS_CNT_RATE_INIT(&counterCBF, 10);
   // The AI Deck is ready for UART Data
   aideck_ready_flag = 1;
 #endif
@@ -351,6 +356,7 @@ static const DeckDriver aideck_deck = {
 
 LOG_GROUP_START(aideck)
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
+STATS_CNT_RATE_LOG_ADD(rateCBF, &counterCBF)
 LOG_ADD(LOG_UINT8, missed_cycles, &missed_cycles)
 #ifdef CBF_ITERS
 LOG_ADD(LOG_UINT16, iters, &(u_struct.iters))
