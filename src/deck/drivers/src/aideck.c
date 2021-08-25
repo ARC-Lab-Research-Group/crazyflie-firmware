@@ -49,6 +49,7 @@
 #include "statsCnt.h"
 
 #if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
+#include"controller_lqr.h"
 #ifdef CBF_ITERS
 static u_it_t u_struct;
 #else
@@ -216,8 +217,13 @@ static void aideckInit(DeckInfo *info){
 #endif
   // Start DMA Rx and configure USART Tx Rx
   USART_DMA_Start(115200, pk_rx.raw, sizeof(CBFPacket));
+#ifdef CBF_TYPE_POS
+  // Start a rate logger for D6LQR_RATE Hz
+  STATS_CNT_RATE_INIT(&counterCBF, 1000/D6LQR_RATE);
+#else
   // Start a rate logger for 100 Hz
   STATS_CNT_RATE_INIT(&counterCBF, 10);
+#endif
   // The AI Deck is ready for UART Data
   aideck_ready_flag = 1;
 #endif

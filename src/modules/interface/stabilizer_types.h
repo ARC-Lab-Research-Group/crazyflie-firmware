@@ -294,8 +294,12 @@ typedef struct
 #define RATE_500_HZ 500
 #define RATE_250_HZ 250
 #define RATE_100_HZ 100
+#define RATE_80_HZ 80
+#define RATE_60_HZ 60
 #define RATE_50_HZ 50
+#define RATE_40_HZ 40
 #define RATE_25_HZ 25
+#define RATE_20_HZ 20
 #define RATE_10_HZ 10
 
 #define RATE_MAIN_LOOP RATE_1000_HZ
