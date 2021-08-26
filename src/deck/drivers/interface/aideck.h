@@ -19,9 +19,11 @@
 #else
 #define MAX_CBFPACKET_DATA_SIZE 16
 #endif // CBF_ITERS
+#elif CBF_TYPE_REF
+#define MAX_CBFPACKET_DATA_SIZE 40
 #else
 #define MAX_CBFPACKET_DATA_SIZE 0
-#endif
+#endif // CBF_TYPE
 
 /**
  * UART Packet structure (MAX_CBF_PACKET_DATA_SIZE+1)Bytes
@@ -108,6 +110,75 @@ typedef struct cbf_qpdata_comp_s{
   int16_t theta; // Pitch [milirad]
   u_comp_t u;     // Compressed Nominal input to adjust
 } __attribute__((packed)) cbf_qpdata_comp_t;
+
+#elif CBF_TYPE_REF
+/** Control Input to adjust in the CBF-QP 16Bytes */
+typedef struct u_s{
+  float T;       // Normalized thrust [m/s^2]
+  float phi;     // Roll  [rad]
+  float theta;   // Pitch [rad]
+  float psi;     // Yaw   [rad]
+} __attribute__((packed)) u_t;
+
+/** Compressed version of u_s 8Bytes*/
+typedef struct u_comp_s{
+  int16_t T;      // Normalized thrust [mm/s^2]
+  int16_t phi;    // Roll  [milirad]
+  int16_t theta;  // Pitch [milirad]
+  int16_t psi;    // Yaw   [milirad]
+} __attribute__((packed)) u_comp_t;
+
+/** Reference trajectory data for CBF_REF 40Bytes*/
+typedef struct ref_s{
+  float T;       // Normalized thrust [m/s^2]
+  float x;       // Position [m]
+  float y;
+  float z;
+  float phi;     // Roll  [rad]
+  float theta;   // Pitch [rad]
+  float psi;     // Yaw   [rad]
+  float x_dot;   // Velocity [m/s]
+  float y_dot;
+  float z_dot;
+} __attribute__((packed)) ref_t;
+
+/** Compressed version of ref_s 20Bytes*/
+typedef struct ref_comp_s{
+  int16_t T;       // Normalized thrust [mm/s^2]
+  int16_t x;       // Position [mm]
+  int16_t y;
+  int16_t z;
+  int16_t phi;     // Roll  [milirad]
+  int16_t theta;   // Pitch [milirad]
+  int16_t psi;     // Yaw   [milirad]
+  int16_t x_dot;   // Velocity [mm/s]
+  int16_t y_dot;
+  int16_t z_dot;
+} __attribute__((packed)) ref_comp_t;
+
+/** OSQP Parametric data to be updated in the OSQPData struct 80Bytes */
+typedef struct cbf_qpdata_s{
+  float x;      // Position [m]
+  float y;
+  float z;
+  float x_dot;  // Velocity [m/s]
+  float y_dot;
+  float z_dot;
+  u_t u;        // Nominal input to adjust
+  ref_t ref;    // Reference trajectory
+} cbf_qpdata_t;
+
+/** Compressed version of cbf_qpdata_s 40Bytes */
+typedef struct cbf_qpdata_comp_s{
+  int16_t x;       // Position [mm]
+  int16_t y;
+  int16_t z;
+  int16_t x_dot;   // Velocity [mm/s]
+  int16_t y_dot;
+  int16_t z_dot;
+  u_comp_t u;      // Compressed Nominal input to adjust
+  ref_comp_t ref;  // Compressed Reference trajectory
+} __attribute__((packed)) cbf_qpdata_comp_t;
 #endif // CBF_TYPE
 
 #ifdef CBF_ITERS
@@ -140,7 +211,4 @@ void aideck_send_cbf_data(const cbf_qpdata_t *data);
  */
 void aideck_get_safe_u(float *u);
 
-
 #endif /* _AIDECK_H_ */
-
-
