@@ -198,7 +198,7 @@ typedef struct u_it_s{
 CBFPacket *cbf_pack(const uint8_t size, uint8_t *data);
 
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
 /**
  * Send the CBF-QP parametric data to the AI Deck to update and solve the problem
  */

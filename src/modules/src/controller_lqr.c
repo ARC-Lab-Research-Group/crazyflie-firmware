@@ -20,7 +20,7 @@
 
 #include "crtp_commander_sdlqr.h"
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
 #include "aideck.h"
 #endif
 
@@ -55,7 +55,7 @@ PidObject pidT; // PID object for altitude (integral)
 #endif
 static bool flying = false; // Set thrust to 0 when false
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
 static cbf_qpdata_t qp_data;
 #endif
 
@@ -89,8 +89,8 @@ static int to_pwm(float T){
 
 #ifdef CBF_TYPE_EUL
 /**
- * Private function. Solve a QP-CBF to limit roll and pitch [phi theta]
- * The OSQP problem is solved in the AI Deck
+ * Private function. Solve a CBF-QP to limit roll and pitch [phi theta]
+ * The problem is solved in the AI Deck
  */
 static void apply_cbf_eul(const state_t *state){
   // Populate cbf_qpdata_t
@@ -110,8 +110,8 @@ static void apply_cbf_eul(const state_t *state){
 
 #ifdef CBF_TYPE_POS
 /**
- * Private function. Solve a QP-CBF to limit position [x y z]
- * The OSQP problem is solved in the AI Deck
+ * Private function. Solve a CBF-QP to limit position [x y z]
+ * The problem is solved in the AI Deck
  */
 static void apply_cbf_pos(const state_t *state){
   // Populate cbf_qpdata_t
@@ -131,6 +131,44 @@ static void apply_cbf_pos(const state_t *state){
   aideck_get_safe_u(u_D6);
 }
 #endif // CBF_TYPE_POS
+
+#ifdef CBF_TYPE_REF
+/**
+ * Private function. Solve a CBF-QP to bound tracking wrt setpoint xyz
+ * The problem is solved in the AI Deck
+ */
+static void apply_cbf_ref(const state_t *state, const setpoint_t *setpoint){
+  // Populate cbf_qpdata_t
+  // State
+  qp_data.x = state->position.x;
+  qp_data.y = state->position.y;
+  qp_data.z = state->position.z;
+  qp_data.x_dot = state->velocity.x;
+  qp_data.y_dot = state->velocity.y;
+  qp_data.z_dot = state->velocity.z;
+  // Input
+  qp_data.u.T = u_D6[0];
+  qp_data.u.phi = u_D6[1];
+  qp_data.u.theta = u_D6[2];
+  qp_data.u.psi = u_D6[3];
+  // Setpoint
+  qp_data.ref.T = setpoint->thrust;
+  qp_data.ref.x = setpoint->position.x;
+  qp_data.ref.y = setpoint->position.y;
+  qp_data.ref.z = setpoint->position.z;
+  qp_data.ref.phi = setpoint->attitude.roll;
+  qp_data.ref.theta = setpoint->attitude.pitch;
+  qp_data.ref.psi = setpoint->attitude.yaw;
+  qp_data.ref.x_dot = setpoint->velocity.x;
+  qp_data.ref.y_dot = setpoint->velocity.y;
+  qp_data.ref.z_dot = setpoint->velocity.z;
+  // Send to AI Deck
+  aideck_send_cbf_data(&qp_data);
+  // Get the most recent safe control received from AI Deck
+  aideck_get_safe_u(u_D6);
+}
+
+#endif // CBF_TYPE_REF
 
 
 // Private function: D9LQR Policy update
@@ -205,6 +243,9 @@ static void lqr_D6(setpoint_t *setpoint, const state_t *state, const uint32_t ti
 #ifdef CBF_TYPE_POS
     // Apply CBF_POS
     apply_cbf_pos(state);  // updates u_D6
+#elif CBF_TYPE_REF
+    // Apply CBF_REF
+    apply_cbf_ref(state,setpoint); // updates u_D6
 #endif
 
   } // if RATE_DO_EXECUTE
@@ -243,7 +284,7 @@ void controllerLqrInit(void){
   //KD6[1][4] = -0.7112f;
   //KD6[2][0] =  2.2361f;
   //KD6[2][3] =  0.7112f;
-#ifdef CBF_TYPE_POS
+#if defined CBF_TYPE_POS || defined CBF_TYPE_REF
   // KD6 Q = [20 20 100 1 1 1]| R = [0.1 20 20 40]
   KD6[0][2] = 31.6228f;
   KD6[0][5] = 8.5584f;
