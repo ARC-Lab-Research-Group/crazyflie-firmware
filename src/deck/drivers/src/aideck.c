@@ -7,7 +7,7 @@
  *
  * Crazyflie control firmware
  *
- * Copyright (C) 2011-2012 Bitcraze AB
+ * Copyright (C) 2011-2021 Bitcraze AB
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -363,8 +363,8 @@ static const DeckDriver aideck_deck = {
     .pid = 0x12,
     .name = "bcAI",
 
-    .usedPeriph = DECK_USING_UART1 | DECK_USING_UART2, // GAP | NINA
-    .usedGpio = DECK_USING_RX1 | DECK_USING_TX1 | DECK_USING_RX2 | DECK_USING_TX2,
+    .usedGpio = DECK_USING_IO_4,
+    .usedPeriph = DECK_USING_UART1,
 
     .init = aideckInit,
     .test = aideckTest,
