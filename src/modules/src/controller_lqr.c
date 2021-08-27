@@ -292,6 +292,13 @@ void controllerLqrInit(void){
   KD6[1][4] = -0.5039f;
   KD6[2][0] =  1.0f;
   KD6[2][3] =  0.5039f;
+#ifdef D6LQR_MISTUNE
+  for (int i=0;i<4;i++){
+    for (int j=0;j<6;j++){
+      KD6[i][j] = D6LQR_MISTUNE*KD6[i][j];
+    }
+  }
+#endif // D6LQR_MISTUNE
 #else
   // KD6 rho=0.5 Richard Murray Method
   KD6[0][2] = 5.6569f;

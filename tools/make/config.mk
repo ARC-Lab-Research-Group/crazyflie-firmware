@@ -7,6 +7,7 @@
 ## Enable the AI Deck CBF-QP for controller_lqr
 #CFLAGS += -DCBF_TYPE_POS
 #CFLAGS += -DCBF_TYPE_EUL
+#CFLAGS += -DCBF_TYPE_REF
 #CFLAGS += -DAI_CBF_DEBUG
 #CFLAGS += -DCBF_ITERS
 
@@ -15,6 +16,9 @@
 
 # Apply Integral Action to altitude control?
 #CFLAGS += -DLQR_ALT_PID
+
+# Mistune the D6LQR controller by reducing KD6 by a factor of:
+#CFLAGS += -DD6LQR_MISTUNE=0.05f
 
 # Force a default estimator with the line below
 #ESTIMATOR=kalman
