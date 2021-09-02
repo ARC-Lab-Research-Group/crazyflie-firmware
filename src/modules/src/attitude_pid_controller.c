@@ -169,7 +169,7 @@ void attitudeControllerGetActuatorOutput(int16_t* roll, int16_t* pitch, int16_t*
 
 /**
  *  Log variables of attitude PID controller
- */ 
+ */
 LOG_GROUP_START(pid_attitude)
 /**
  * @brief Proportional output roll
