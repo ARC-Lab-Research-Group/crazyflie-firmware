@@ -48,7 +48,7 @@
 #include "aideck_uart_dma.h"
 #include "statsCnt.h"
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 #include"controller_lqr.h"
 #ifdef CBF_ITERS
 static u_it_t u_struct;
@@ -116,7 +116,7 @@ static void hex_to_char(uint8_t hex){
 }
 #endif
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 // Update u with a stop command in case of error
 static void force_stop_u(void){
   u->T = 0;
@@ -124,7 +124,7 @@ static void force_stop_u(void){
   u->p = 0;
   u->q = 0;
   u->r = 0;
-#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
   u->phi = 0;
   u->theta = 0;
   u->psi = 0;
@@ -140,7 +140,7 @@ static void print_u(void){
   DEBUG_PRINT("u.p = %.4f\n",(double)u->p);
   DEBUG_PRINT("u.q = %.4f\n",(double)u->q);
   DEBUG_PRINT("u.r = %.4f\n",(double)u->r);
-#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
   DEBUG_PRINT("u.phi = %.4f\n",(double)u->phi);
   DEBUG_PRINT("u.theta = %.4f\n",(double)u->theta);
   DEBUG_PRINT("u.psi = %.4f\n",(double)u->psi);
@@ -152,7 +152,7 @@ static void print_u(void){
 }
 #endif
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 // Update the u struct from received data and clear pk_rx
 static uint8_t unpack(void){
   if(pk_rx.header!='V'){ return 1; // Check healthy pk
@@ -183,7 +183,7 @@ static void Gap8Task(void *param) {
 
   // Receive data in a loop
   while (1){
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
     vTaskDelay(M2T(1));
     if(dma_flag){
       dma_flag = 0; // Clear the flag
@@ -209,15 +209,15 @@ static void aideckInit(DeckInfo *info){
   xTaskCreate(Gap8Task, AI_DECK_GAP_TASK_NAME, AI_DECK_TASK_STACKSIZE, NULL,
               AI_DECK_TASK_PRI, NULL);
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 #ifdef CBF_ITERS
   u = &(u_struct.u);
 #else
   u = &(u_struct);
-#endif
+#endif // CBF_ITERS
   // Start DMA Rx and configure USART Tx Rx
   USART_DMA_Start(115200, pk_rx.raw, sizeof(CBFPacket));
-#if defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
   // Start a rate logger for D6LQR_RATE Hz
   STATS_CNT_RATE_INIT(&counterCBF, 1000/D6LQR_RATE);
 #else
@@ -226,7 +226,7 @@ static void aideckInit(DeckInfo *info){
 #endif
   // The AI Deck is ready for UART Data
   aideck_ready_flag = 1;
-#endif
+#endif // CBF_TYPE_ANY
 
 #ifdef DEBUG_NINA_PRINT
   // Initialize the UART for the NINA
@@ -243,7 +243,7 @@ static bool aideckTest(){
     return true;
 }
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 // Send the CBF-QP Parametric data via UART1
 void aideck_send_cbf_data(const cbf_qpdata_t *data){
   if(aideck_ready_flag){ // Is the AI Deck ready to receive data?
@@ -255,7 +255,7 @@ void aideck_send_cbf_data(const cbf_qpdata_t *data){
     data_comp.u.p = (int16_t)(data->u.p*1000.0f);
     data_comp.u.q = (int16_t)(data->u.q*1000.0f);
     data_comp.u.r = (int16_t)(data->u.r*1000.0f);
-#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
     data_comp.x = (int16_t)(data->x*1000.0f);
     data_comp.y = (int16_t)(data->y*1000.0f);
     data_comp.z = (int16_t)(data->z*1000.0f);
@@ -266,7 +266,7 @@ void aideck_send_cbf_data(const cbf_qpdata_t *data){
     data_comp.u.phi = (int16_t)(data->u.phi*1000.0f);
     data_comp.u.theta = (int16_t)(data->u.theta*1000.0f);
     data_comp.u.psi = (int16_t)(data->u.psi*1000.0f);
-#ifdef CBF_TYPE_REF
+#if defined CBF_TYPE_REF || defined CBF_TYPE_NORM
     data_comp.ref.T = (int16_t)(data->ref.T*1000.0f);
     data_comp.ref.x = (int16_t)(data->ref.x*1000.0f);
     data_comp.ref.y = (int16_t)(data->ref.y*1000.0f);
@@ -314,7 +314,7 @@ void aideck_send_cbf_data(const cbf_qpdata_t *data){
 }
 #endif
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 // Pack data into CBFPacket pk_tx
 CBFPacket *cbf_pack(const uint8_t size, uint8_t *data){
   // Check data size
@@ -340,7 +340,7 @@ void aideck_get_safe_u(float *u_control){
   u_control[1] = u->p;
   u_control[2] = u->q;
   u_control[3] = u->r;
-#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#elif defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
   u_control[0] = u->T;
   u_control[1] = u->phi;
   u_control[2] = u->theta;
@@ -350,7 +350,7 @@ void aideck_get_safe_u(float *u_control){
 
 
 // IRQ DMA
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 void __attribute__((used)) DMA1_Stream1_IRQHandler(void){
   DMA_ClearFlag(DMA1_Stream1, UART3_RX_DMA_ALL_FLAGS);
   dma_flag = 1;
@@ -373,7 +373,7 @@ static const DeckDriver aideck_deck = {
 
 
 LOG_GROUP_START(aideck)
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 STATS_CNT_RATE_LOG_ADD(rateCBF, &counterCBF)
 LOG_ADD(LOG_UINT8, missed_cycles, &missed_cycles)
 #ifdef CBF_ITERS

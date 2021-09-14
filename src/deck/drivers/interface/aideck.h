@@ -11,15 +11,15 @@
 #include "stabilizer_types.h"
 #include "controller_lqr.h"
 
-#ifdef CBF_TYPE_POS
+#if defined CBF_TYPE_POS
 #define MAX_CBFPACKET_DATA_SIZE 20
-#elif CBF_TYPE_EUL
+#elif defined CBF_TYPE_EUL
 #ifdef CBF_ITERS
 #define MAX_CBFPACKET_DATA_SIZE 20
 #else
 #define MAX_CBFPACKET_DATA_SIZE 16
 #endif // CBF_ITERS
-#elif CBF_TYPE_REF
+#elif defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 #define MAX_CBFPACKET_DATA_SIZE 40
 #else
 #define MAX_CBFPACKET_DATA_SIZE 0
@@ -40,7 +40,7 @@ typedef union{
 } __attribute__((packed)) CBFPacket;
 
 
-#ifdef CBF_TYPE_POS
+#if defined CBF_TYPE_POS
 /** Control Input to adjust in the CBF-QP 16Bytes */
 typedef struct u_s{
   float T;       // Normalized thrust [m/s^2]
@@ -79,7 +79,7 @@ typedef struct cbf_qpdata_comp_s{
   u_comp_t u;    // Compressed Nominal input to adjust
 } __attribute__((packed)) cbf_qpdata_comp_t;
 
-#elif CBF_TYPE_EUL
+#elif defined CBF_TYPE_EUL
 /** Control Input to adjust in the CBF-QP 16Bytes */
 typedef struct u_s{
   float T;  // Normalized thrust [m/s^2]
@@ -111,7 +111,7 @@ typedef struct cbf_qpdata_comp_s{
   u_comp_t u;     // Compressed Nominal input to adjust
 } __attribute__((packed)) cbf_qpdata_comp_t;
 
-#elif CBF_TYPE_REF
+#elif defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 /** Control Input to adjust in the CBF-QP 16Bytes */
 typedef struct u_s{
   float T;       // Normalized thrust [m/s^2]
@@ -128,7 +128,7 @@ typedef struct u_comp_s{
   int16_t psi;    // Yaw   [milirad]
 } __attribute__((packed)) u_comp_t;
 
-/** Reference trajectory data for CBF_REF 40Bytes*/
+/** Reference trajectory data 40Bytes*/
 typedef struct ref_s{
   float T;       // Normalized thrust [m/s^2]
   float x;       // Position [m]
@@ -198,7 +198,7 @@ typedef struct u_it_s{
 CBFPacket *cbf_pack(const uint8_t size, uint8_t *data);
 
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 /**
  * Send the CBF-QP parametric data to the AI Deck to update and solve the problem
  */

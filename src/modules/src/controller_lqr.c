@@ -20,7 +20,7 @@
 
 #include "crtp_commander_sdlqr.h"
 
-#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_EUL || defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 #include "aideck.h"
 #endif
 
@@ -55,7 +55,7 @@ PidObject pidT; // PID object for altitude (integral)
 #endif
 static bool flying = false; // Set thrust to 0 when false
 
-#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_EUL || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 static cbf_qpdata_t qp_data;
 #endif
 
@@ -83,7 +83,7 @@ static int to_pwm(float T){
 
   float r = (b+sqrtf(powf(b,2)-4*a*(c-g)))/(2*a); // Quadratic formula (+)
   int pwm = (int) ((r-e)/d);
-  pwm -= 9000; // Offset calibration
+  pwm -= 10000; // Offset calibration
   return pwm;
 }
 
@@ -132,7 +132,7 @@ static void apply_cbf_pos(const state_t *state){
 }
 #endif // CBF_TYPE_POS
 
-#ifdef CBF_TYPE_REF
+#if defined CBF_TYPE_REF || defined CBF_TYPE_NORM
 /**
  * Private function. Solve a CBF-QP to bound tracking wrt setpoint xyz
  * The problem is solved in the AI Deck
@@ -167,8 +167,7 @@ static void apply_cbf_ref(const state_t *state, const setpoint_t *setpoint){
   // Get the most recent safe control received from AI Deck
   aideck_get_safe_u(u_D6);
 }
-
-#endif // CBF_TYPE_REF
+#endif // CBF_TYPE_REF || CBF_TYPE_NORM
 
 
 // Private function: D9LQR Policy update
@@ -240,10 +239,10 @@ static void lqr_D6(setpoint_t *setpoint, const state_t *state, const uint32_t ti
     u_D6[2] += setpoint->attitude.pitch;
     u_D6[3] += setpoint->attitude.yaw;
 
-#ifdef CBF_TYPE_POS
+#if defined CBF_TYPE_POS
     // Apply CBF_POS
     apply_cbf_pos(state);  // updates u_D6
-#elif CBF_TYPE_REF
+#elif defined CBF_TYPE_REF || defined CBF_TYPE_NORM
     // Apply CBF_REF
     apply_cbf_ref(state,setpoint); // updates u_D6
 #endif
@@ -284,7 +283,7 @@ void controllerLqrInit(void){
   //KD6[1][4] = -0.7112f;
   //KD6[2][0] =  2.2361f;
   //KD6[2][3] =  0.7112f;
-#if defined CBF_TYPE_POS || defined CBF_TYPE_REF
+#if defined CBF_TYPE_POS || defined CBF_TYPE_REF || defined CBF_TYPE_NORM
   // KD6 Q = [20 20 100 1 1 1]| R = [0.1 20 20 40]
   KD6[0][2] = 31.6228f;
   KD6[0][5] = 8.5584f;
